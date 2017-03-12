@@ -52,16 +52,14 @@
   NSArray *titles = @[@[@"q",@"w",@"e",@"r",@"t",@"y",@"u",@"i",@"o",@"p"],
                       @[@"a",@"s",@"d",@"f",@"g",@"h",@"j",@"k",@"l"],
                       @[@"shift",@"z",@"x",@"c",@"v",@"b",@"n",@"m",@"bksp"],
-                      @[@"123",@"next",@"Space",@"return"]];
-  // 为每一行创建视图
-  NSArray *rowViews = @[[self createRowOfButtons:titles[0]],
-                    [self createRowOfButtons:titles[1]],
-                    [self createRowOfButtons:titles[2]],
-                    [self createRowOfButtons:titles[3]]];
-  [self.view addSubview:rowViews[0]];
-  [self.view addSubview:rowViews[1]];
-  [self.view addSubview:rowViews[2]];
-  [self.view addSubview:rowViews[3]];
+                      @[@"123",@"next",@"space",@"return"]];
+  // 为每一行创建视图，并加入主视图
+  NSMutableArray *rowViews = [NSMutableArray array];
+  for(NSArray *rowTitle in titles){
+    UIView* view = [self createRowOfButtons:rowTitle];
+    [self.view addSubview:view];
+    [rowViews addObject:view];
+  }
   // 为每行视图添加约束
   for(UIView *rowView in rowViews) {
     NSInteger index = [rowViews indexOfObject:rowView];
@@ -124,7 +122,7 @@
   }
 }
 
-// 为新的一行titles创建视图及内部按键
+// 根据buttonTitles创建包含一排按键的视图
 - (UIView* )createRowOfButtons:(NSArray*)buttonTitles{
   // 为每行按键创建一个view
   UIView *keyBoardRowView = [[UIView alloc]initWithFrame:CGRectMake(0, 0, 320, 50)];
@@ -142,12 +140,12 @@
     [btn setTitleColor:[UIColor darkGrayColor]
               forState:(UIControlStateNormal)];
     // 指定响应函数
-//    [btn addTarget:self action:@selector(didTapButton:)
-//              forControlEvents:(UIControlEventTouchUpInside)];
+    [btn addTarget:self action:@selector(didTapButton:)
+              forControlEvents:(UIControlEventTouchUpInside)];
     [buttons addObject:btn];
+    [self.allButtons addObject:btn];
     [keyBoardRowView addSubview:btn];
   }
-  [self.allButtons addObject:buttons];
   
   // 遍历每一个按键，设置约束
   for(UIButton *button in buttons) {
@@ -242,39 +240,35 @@
     [self.nextKeyboardButton setTitleColor:textColor forState:UIControlStateNormal];
 }
 
-//获取点击按钮的title
 - (void)didTapButton:(UIButton*)sender{
+  //获取被点击按钮的title
   NSString *title = [sender titleForState:(UIControlStateNormal)];
-  //响应触摸事件的文本内容
-  if([title isEqualToString:@"shift"] || [title isEqualToString:@"SHIFT"]){
+  if([title caseInsensitiveCompare:@"shift"] == NSOrderedSame){
     self.isPressShiftKey = !self.isPressShiftKey;
-    //大小写转换
-    [self changeUpOrDown:sender];
-  }else if ([title isEqualToString:@"bksp"] || [title isEqualToString:@"BKSP"]){
+    [self onShift]; // 切换大小写
+  }else if([title caseInsensitiveCompare:@"bksp"] == NSOrderedSame){
     [self.textDocumentProxy deleteBackward];
-  }else if ([title isEqualToString:@"Space"]){
+  }else if([title caseInsensitiveCompare:@"space"] == NSOrderedSame){
     [self.textDocumentProxy insertText:@" "];
-  }else if ([title isEqualToString:@"return"]){
+  }else if([title caseInsensitiveCompare:@"return"] == NSOrderedSame){
     [self.textDocumentProxy insertText:@"\n"];
-  }else if ([title isEqualToString:@"next"]){
+  }else if([title caseInsensitiveCompare:@"next"] == NSOrderedSame){
     [self advanceToNextInputMode];
   }else{
     [self.textDocumentProxy insertText:title];
   }
 }
 
-- (void)changeUpOrDown:(UIButton*)shiftKey{
-  for(NSArray *buttons in self.allButtons) {
-    for (UIButton *button in buttons) {
-      NSString *title = [button titleForState:UIControlStateNormal];
-      if (self.isPressShiftKey) {
-        title = [title uppercaseString];
-      }
-      else{
-        title = [title lowercaseString];
-      }
-      [button setTitle:title forState:(UIControlStateNormal)];
+- (void)onShift{
+  // 遍历每一个按键，切换键帽大小写
+  for(UIButton *button in self.allButtons) {
+    NSString *title = [button titleForState:UIControlStateNormal];
+    if (self.isPressShiftKey) {
+      title = [title uppercaseString];
+    }else{
+      title = [title lowercaseString];
     }
+    [button setTitle:title forState:(UIControlStateNormal)];
   }
 }
 
